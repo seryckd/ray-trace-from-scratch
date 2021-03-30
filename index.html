@@ -1,0 +1,160 @@
+<html>
+    <head>
+        <style type="text/css">
+        .row {
+            display: flex
+        }
+        </style>
+    </head>
+    <body>
+        <h1>Ray Trace Scene</h1>
+        <div class=row>
+            <canvas id="canvas" style="border: 1px grey solid"></canvas>
+            <table>
+                <tr><td>Forward</td><td>w</td></tr>
+                <tr><td>Backward</td><td>s</td></tr>
+                <tr><td>Strafe Left</td><td>a</td></tr>
+                <tr><td>Strafe Right</td><td>d</td></tr>
+                <tr><td>Up</td><td>q</td></tr>
+                <tr><td>Down</td><td>e</td></tr>
+                <tr><td>Pitch Up</td><td>t</td></tr>
+                <tr><td>Pitch Down</td><td>y</td></tr>
+                <tr><td>Roll Clockwise</td><td>g</td></tr>
+                <tr><td>Roll Anticlockwise</td><td>h</td></tr>
+                <tr><td>Yaw Left</td><td>b</td></tr>
+                <tr><td>Yaw Right</td><td>n</td></tr>
+                <tr><td>Reset to Origin</td><td>r</td></tr>
+            </table>
+        </div>
+
+        <script type="module">
+
+            import { MainLoop } from "./main.js";
+            import { Scene } from "./scene.js";
+            import { Ray } from "./ray.js";
+            import * as maths from "./maths.js";
+
+            var canvas_width = 300;
+            var canvas_height = 300;
+
+            var velocity = 0.1;
+            var rotateDegs = 1;
+
+            var canvas = document.getElementById("canvas");
+            canvas.width = canvas_width;
+            canvas.height = canvas_height;
+
+            let camera = {x:0, y:0, z:0};
+            let cameraRot = { pitch:0, roll:0, yaw: 0};
+
+            let rotationMatrix = maths.makeIdent();
+
+            console.log(rotationMatrix);
+
+            let render = function() {
+                const ctx = canvas.getContext("2d");
+                ray.render(ctx, camera, rotationMatrix);
+            }
+
+            // Keys to Binding
+            let keyBindings = {
+                87 : 'forward',         // 'w'
+                83 : 'backward',        // 's'
+                65 : 'strafeLeft',      // 'a'
+                68 : 'strafeRight',     // 'd'
+                81 : 'up',              // 'q'
+                69 : 'down',            // 'e'
+                84 : 'pitchUp',         // 't'
+                89 : 'pitchDown',       // 'y'
+                71 : 'rollClock',       // 'g'
+                72 : 'rollAnticlock',   // 'h'
+                66 : 'yawLeft',         // 'b'
+                78 : 'yawRight',        // 'n'
+                82 : 'reset'            // 'r'
+            };
+
+            let update = function(step, actions) {
+
+                let isUpdate = false;
+                let isRecalc = false;
+
+                if (actions.forward === true) {
+                    camera.z = camera.z + velocity;
+                    isUpdate = true;
+                }
+                if (actions.backward === true) {
+                    camera.z = camera.z - velocity;
+                    isUpdate = true;
+                }
+                if (actions.strafeLeft === true) {
+                    camera.x = camera.x - velocity;
+                    isUpdate = true;
+                }
+                if (actions.strafeRight === true) {
+                    camera.x = camera.x + velocity;
+                    isUpdate = true;
+                }
+                if (actions.up === true) {
+                    camera.y = camera.y + velocity;
+                    isUpdate = true;
+                }
+                if (actions.down === true) {
+                    camera.y = camera.y - velocity;
+                    isUpdate = true;
+                }
+                if (actions.pitchUp === true) {
+                    cameraRot.pitch = cameraRot.pitch + rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.pitchDown === true) {
+                    cameraRot.pitch = cameraRot.pitch - rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.rollClock === true) {
+                    cameraRot.roll = cameraRot.roll + rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.rollAnticlock === true) {
+                    cameraRot.roll = cameraRot.roll - rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.yawLeft === true) {
+                    cameraRot.yaw = cameraRot.yaw - rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.yawRight === true) {
+                    cameraRot.yaw = cameraRot.yaw + rotateDegs;
+                    isRecalc = true;
+                }
+                if (actions.reset === true) {
+                    camera.x = camera.y = camera.z = 0;
+                    cameraRot.yaw = cameraRot.roll = cameraRot.pitch = 0;
+                    isRecalc = true;
+                }
+
+                if (isRecalc) {
+                    isUpdate = true;
+                    rotationMatrix = maths.matrix3Mult(
+                        maths.makeRotZ(maths.degToRads(cameraRot.roll)),
+                        maths.matrix3Mult(
+                            maths.makeRotY(maths.degToRads(cameraRot.yaw)),
+                            maths.makeRotX(maths.degToRads(cameraRot.pitch))
+                        )
+                    );
+                }
+                return isUpdate;
+            }
+
+            let ray = new Ray(
+                canvas_width,
+                canvas_height,
+                Scene
+            );
+
+            var main = new MainLoop(update, render);
+            main.registerKeyBindings(keyBindings);
+            main.start();
+
+        </script>
+    </body>
+</html>
