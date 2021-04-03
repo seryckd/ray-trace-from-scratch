@@ -40,7 +40,12 @@ export class MainLoop {
         // If browser looses focus then dt will become very large
         // when focus is resumed; so cap dt at 1.0 secs
         this.dt = this.dt + Math.min(1, (now - this.last) / 1000);
-  
+
+        /* this will update in real time.  
+            currently key press routine doesn't work well with this
+            because updateFunction is taken 300ms
+
+
         while (this.dt > this.step) {
             this.dt = this.dt - this.step;
   
@@ -48,6 +53,14 @@ export class MainLoop {
            if (this.updateFunction(this.step, this.actions)) {
                this.isNeedsRender = true;
            }
+        }
+        */
+
+        if (this.dt > this.step) {
+            this.dt = 0;
+            if (this.updateFunction(this.step, this.actions)) {
+                this.isNeedsRender = true;
+            } 
         }
   
         if (this.isNeedsRender) {

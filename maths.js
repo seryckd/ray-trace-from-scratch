@@ -1,4 +1,49 @@
-export function pointSubtract(pt1, pt2) {
+
+// ----------------------------------------------------------------------------
+// Misc
+// ----------------------------------------------------------------------------
+
+export function degToRads(deg) {
+    return deg * (Math.PI / 180);
+}
+
+export function valueInRange(scalar, min, max) {
+    if (scalar > min && scalar < max) {
+        return true;
+    }
+    return false;
+}
+
+// ----------------------------------------------------------------------------
+// Points
+// ----------------------------------------------------------------------------
+
+/**
+ * 
+ * @param {Point} p1 
+ * @param {Point} p2 
+ * @returns {Point}
+ */
+export function addPoints(p1, p2) {
+    return {
+        x: p1.x + p2.x,
+        y: p1.y + p2.y,
+        z: p1.z + p2.z
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Vectors
+// ----------------------------------------------------------------------------
+
+/**
+ * Return a vector from start point to end point
+ * 
+ * @param {Point} pt1 - start point
+ * @param {Point} pt2 - end point
+ * @returns {Vector}
+ */
+export function makeVectorFromPoints(pt1, pt2) {
     return {
         x: pt1.x - pt2.x,
         y: pt1.y - pt2.y,
@@ -6,16 +51,57 @@ export function pointSubtract(pt1, pt2) {
     }
 }
 
+/**
+ * 
+ * @param {Vector} v 
+ * @param {Vector} w 
+ * @returns Number
+ */
 export function dotProduct(v, w) {
     return v.x*w.x + v.y*w.y + v.z*w.z;
 }
 
-export function valueInRange(pt, min, max) {
-    if (pt > min && pt < max) {
-        return true;
-    }
-    return false;
+/**
+ * 
+ * @param {Vector} v 
+ * @returns Number
+ */
+export function vectorLength(v) {
+    return Math.sqrt(dotProduct(v, v));
 }
+
+/**
+ * Multiple a vector by a number (Scalar Product)
+ * 
+ * @param {Vector} v 
+ * @param {Number} s 
+ * @returns {Vector}
+ */
+export function scalarProduct(v, s) {
+    return {
+        x: v.x * s,
+        y: v.y * s,
+        z: v.z * s
+    }
+}
+
+/**
+ * 
+ * @param {Vector} v
+ * @returns {Vector} 
+ */
+export function normalizeVector(v) {
+    let length = vectorLength(v);
+    return {
+        x: v.x / length,
+        y: v.y / length,
+        z: v.z / length
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Matrixes
+// ----------------------------------------------------------------------------
 
 export function makeIdent() {
     return [
@@ -74,6 +160,3 @@ export function matrix3Mult(m, n) {
     ]
 }
 
-export function degToRads(deg) {
-    return deg * (Math.PI / 180);
-}
