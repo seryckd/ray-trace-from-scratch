@@ -14,22 +14,22 @@ export function valueInRange(scalar, min, max) {
     return false;
 }
 
-// ----------------------------------------------------------------------------
-// Points
-// ----------------------------------------------------------------------------
-
 /**
+ * Restricts a value between the given min and max
  * 
- * @param {Point} p1 
- * @param {Point} p2 
- * @returns {Point}
+ * @param {Number} value 
+ * @param {Number} min 
+ * @param {Number} max 
+ * @returns {Number} - value in the range between min and max
  */
-export function addPoints(p1, p2) {
-    return {
-        x: p1.x + p2.x,
-        y: p1.y + p2.y,
-        z: p1.z + p2.z
+export function clamp(value, min, max) {
+    if (value <= min) {
+        return min;
     }
+    if (value >= max) {
+        return max;
+    }
+    return value;
 }
 
 // ----------------------------------------------------------------------------
@@ -52,22 +52,33 @@ export function makeVectorFromPoints(pt1, pt2) {
 }
 
 /**
+ * Add a vector to a point to return a new point
  * 
+ * @param {Point} p
  * @param {Vector} v 
- * @param {Vector} w 
- * @returns Number
+ * @returns {Point}
  */
-export function dotProduct(v, w) {
-    return v.x*w.x + v.y*w.y + v.z*w.z;
+ export function addVectorToPoint(p, v) {
+    return {
+        x: p.x + v.x,
+        y: p.y + v.y,
+        z: p.z + v.z
+    }
 }
 
 /**
+ * Subtract v2 from v1
  * 
- * @param {Vector} v 
- * @returns Number
+ * @param {Vector} v1 
+ * @param {Vector} v2 
+ * @returns {Vector}
  */
-export function vectorLength(v) {
-    return Math.sqrt(dotProduct(v, v));
+export function subtractVectors(v1, v2) {
+    return {
+        x: v1.x - v2.x,
+        y: v1.y - v2.y,
+        z: v1.z - v2.z
+    }
 }
 
 /**
@@ -86,6 +97,29 @@ export function scalarProduct(v, s) {
 }
 
 /**
+ * Magnitude (length) of a vector
+ * 
+ * @param {Vector} v 
+ * @returns Number
+ */
+ export function vectorLength(v) {
+    return Math.sqrt(dotProduct(v, v));
+}
+
+/**
+ * Return the inverse of a Vector
+ * @param {Vector} v 
+ * @returns {Vector}
+ */
+export function inverseVector(v) {
+    return {
+        x: v.x * -1,
+        y: v.y * -1,
+        z: v.z * -1
+    }
+}
+
+/**
  * 
  * @param {Vector} v
  * @returns {Vector} 
@@ -97,6 +131,16 @@ export function normalizeVector(v) {
         y: v.y / length,
         z: v.z / length
     }
+}
+
+/**
+ * 
+ * @param {Vector} v 
+ * @param {Vector} w 
+ * @returns Number
+ */
+ export function dotProduct(v, w) {
+    return v.x*w.x + v.y*w.y + v.z*w.z;
 }
 
 // ----------------------------------------------------------------------------

@@ -1,21 +1,31 @@
+import * as maths from "./maths.js";
+
 export class Colour {
 
-    constructor(c) {
-        this.r = c.r;
-        this.g = c.g;
-        this.b = c.b;
+    /**
+     * 
+     * @param {Integer} r 
+     * @param {Integer} g 
+     * @param {Integer} b 
+     */
+    constructor(r, g, b) {
+        this.r = r;
+        this.g = g;
+        this.b = b;
     }
 
+    /**
+     * Apply an intensity value to the stored colour
+     * 
+     * @param {Number} i - between 0 and 1
+     * @returns {Colour}
+     */
     applyIntensity(i) {
 
-        this.r = this.r * i;
-        this.g = this.g * i;
-        this.b = this.b * i;
+        this.r = maths.clamp(Math.round(this.r * i), 0, 255);
+        this.g = maths.clamp(Math.round(this.g * i), 0, 255);
+        this.b = maths.clamp(Math.round(this.b * i), 0, 255);
 
         return this;
-    }
-
-    toCSS() {
-        return 'rgb(' + this.r + ',' + this.g + ',' + this.b + ')';
     }
 }

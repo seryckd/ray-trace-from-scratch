@@ -35,6 +35,7 @@
             import { MainLoop } from "./main.js";
             import { Scene } from "./scene.js";
             import { Ray } from "./ray.js";
+            import { Camera } from "./camera.js";
             import * as maths from "./maths.js";
 
             var canvas_width = 300;
@@ -47,10 +48,7 @@
             canvas.width = canvas_width;
             canvas.height = canvas_height;
 
-            let camera = {x:0, y:0, z:0};
-            let cameraRot = { pitch:0, roll:0, yaw: 0};
-
-            let rotationMatrix = maths.makeIdent();
+            let camera = new Camera();
 
             var frameTime = document.getElementById("frameTime");
 
@@ -58,7 +56,7 @@
                 const ctx = canvas.getContext("2d");
                 const buffer = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 let now = window.performance.now();
-                ray.render(buffer, camera, rotationMatrix);
+                ray.render(buffer, camera);
                 ctx.putImageData(buffer, 0, 0);
                 let diff = window.performance.now() - now;
                 frameTime.innerText = 'Render: ' + Math.round(diff) + 'ms';
@@ -83,79 +81,47 @@
 
             let update = function(step, actions) {
 
-                let isUpdate = false;
-                let isRecalc = false;
-
                 if (actions.forward === true) {
-                    camera.z = camera.z + velocity;
-                    isUpdate = true;
+                    camera.adjustZ(velocity);
                 }
                 if (actions.backward === true) {
-                    camera.z = camera.z - velocity;
-                    isUpdate = true;
+                    camera.adjustZ(-velocity);
                 }
                 if (actions.strafeLeft === true) {
-                    camera.x = camera.x - velocity;
-                    isUpdate = true;
+                    camera.adjustX(-velocity);
                 }
                 if (actions.strafeRight === true) {
-                    camera.x = camera.x + velocity;
-                    isUpdate = true;
+                    camera.adjustX(velocity);
                 }
                 if (actions.up === true) {
-                    camera.y = camera.y + velocity;
-                    isUpdate = true;
+                    camera.adjustY(velocity);
                 }
                 if (actions.down === true) {
-                    camera.y = camera.y - velocity;
-                    isUpdate = true;
+                    camera.adjustY(-velocity);
                 }
                 if (actions.pitchUp === true) {
-                    cameraRot.pitch = cameraRot.pitch + rotateDegs;
-                    isRecalc = true;
+                    camera.adjustPitch(rotateDegs);
                 }
                 if (actions.pitchDown === true) {
-                    cameraRot.pitch = cameraRot.pitch - rotateDegs;
-                    isRecalc = true;
+                    camera.adjustPitch(-rotateDegs);
                 }
                 if (actions.rollClock === true) {
-                    cameraRot.roll = cameraRot.roll + rotateDegs;
-                    isRecalc = true;
+                    camera.adjustRoll(rotateDegs);
                 }
                 if (actions.rollAnticlock === true) {
-                    cameraRot.roll = cameraRot.roll - rotateDegs;
-                    isRecalc = true;
+                    camera.adjustRoll(-rotateDegs);
                 }
                 if (actions.yawLeft === true) {
-                    cameraRot.yaw = cameraRot.yaw - rotateDegs;
-                    isRecalc = true;
+                    camera.adjustYaw(-rotateDegs);
                 }
                 if (actions.yawRight === true) {
-                    cameraRot.yaw = cameraRot.yaw + rotateDegs;
-                    isRecalc = true;
+                    camera.adjustYaw(rotateDegs);
                 }
                 if (actions.reset === true) {
-                    camera.x = camera.y = camera.z = 0;
-                    cameraRot.yaw = cameraRot.roll = cameraRot.pitch = 0;
-                    isRecalc = true;
+                    camera.reset();
                 }
 
-                if (isRecalc) {
-                    isUpdate = true;
-                    rotationMatrix = maths.matrix3Mult(
-                        maths.makeRotZ(maths.degToRads(cameraRot.roll)),
-                        maths.matrix3Mult(
-                            maths.makeRotY(maths.degToRads(cameraRot.yaw)),
-                            maths.makeRotX(maths.degToRads(cameraRot.pitch))
-                        )
-                    );
-                }
-
-                if (isUpdate) {
-                    console.log('update');
-                }
-
-                return isUpdate;
+                return camera.hasChanged();
             }
 
             let ray = new Ray(
