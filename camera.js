@@ -1,5 +1,9 @@
 import * as maths from "./maths.js";
 
+/**
+ * Camera has a position (Point) and direction (Vector). The direction is encoded
+ * as a rotation matrix.
+ */
 export class Camera {
     constructor() {
         this.reset();
@@ -8,12 +12,25 @@ export class Camera {
     reset() {
         this.position = { x:0, y:0, z:0 };
         this.rotation = { pitch:0, roll:0, yaw: 0};
+        this.direction = { x:0, y:0, z:1 };
         this.matrix = maths.makeIdent();
         this.fChanged = true;
     }
 
     hasChanged() {
         return this.fChanged;
+    }
+
+    forward(value) {
+        let d = maths.scalarProduct(this.direction, value);
+
+        this.position = maths.addVectorToPoint(this.position, d);
+
+        this.fChanged = true;
+    }
+
+    backward(value) {
+        this.forward(-value);
     }
 
     adjustX(value) {
@@ -33,6 +50,11 @@ export class Camera {
 
     adjustPitch(angle) {
         this.rotation.pitch += angle;
+
+        this.rotationMatrix();
+
+        this.direction = maths.applyMatrix3x3ToVector(this.matrix, this.direction);
+
         this.fChanged = true;
     }
 

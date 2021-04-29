@@ -1,11 +1,9 @@
 <html>
     <head>
-        <style type="text/css">
-        .row {
-            display: flex
-        }
-        </style>
-    </head>
+        <link href="css/layout.css" rel="stylesheet" type="text/css">
+        <link href="css/local.css" rel="stylesheet" type="text/css">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     </head>  
     <body>
         <h1>Ray Trace Scene</h1>
         <div>
@@ -81,24 +79,12 @@
 
             let update = function(step, actions) {
 
-                if (actions.forward === true) {
-                    camera.adjustZ(velocity);
+                if (actions.reset === true) {
+                    camera.reset();
                 }
-                if (actions.backward === true) {
-                    camera.adjustZ(-velocity);
-                }
-                if (actions.strafeLeft === true) {
-                    camera.adjustX(-velocity);
-                }
-                if (actions.strafeRight === true) {
-                    camera.adjustX(velocity);
-                }
-                if (actions.up === true) {
-                    camera.adjustY(velocity);
-                }
-                if (actions.down === true) {
-                    camera.adjustY(-velocity);
-                }
+
+                // Calculate view matrix first
+
                 if (actions.pitchUp === true) {
                     camera.adjustPitch(rotateDegs);
                 }
@@ -117,8 +103,26 @@
                 if (actions.yawRight === true) {
                     camera.adjustYaw(rotateDegs);
                 }
-                if (actions.reset === true) {
-                    camera.reset();
+
+                // Calculate movement
+
+                if (actions.forward === true) {
+                    camera.forward(velocity);
+                }
+                if (actions.backward === true) {
+                    camera.backward(velocity);
+                }
+                if (actions.strafeLeft === true) {
+                    camera.adjustX(-velocity);
+                }
+                if (actions.strafeRight === true) {
+                    camera.adjustX(velocity);
+                }
+                if (actions.up === true) {
+                    camera.adjustY(velocity);
+                }
+                if (actions.down === true) {
+                    camera.adjustY(-velocity);
                 }
 
                 return camera.hasChanged();

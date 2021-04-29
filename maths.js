@@ -177,6 +177,10 @@ export function makeRotY(angle) {
     ];
 }
 
+/**
+ * @param {Float} angle in radians 
+ * @returns 
+ */
 export function makeRotZ(angle) {
     let s = Math.sin(angle);
     let c = Math.cos(angle);
@@ -188,6 +192,12 @@ export function makeRotZ(angle) {
     ];
 }
 
+/**
+ * 
+ * @param {Matrix} m 
+ * @param {Vector} v 
+ * @returns {Vector}
+ */
 export function applyMatrix3x3ToVector(m, v) {
     return {
         x: m[0][0]*v.x + m[0][1]*v.y + m[0][2]*v.z,
@@ -196,6 +206,12 @@ export function applyMatrix3x3ToVector(m, v) {
     }
 }
 
+/**
+ * 
+ * @param {Matrix} m 
+ * @param {Matrix} n 
+ * @returns {Matrix}
+ */
 export function matrix3Mult(m, n) {
     return [
         [ m[0][0]*n[0][0] + m[0][1]*n[1][0] + m[0][2]*n[2][0], m[0][0]*n[0][1] + m[0][1]*n[1][1] + m[0][2]*n[2][1], m[0][0]*n[0][2] + m[0][1]*n[1][2] + m[0][2]*n[2][2] ],

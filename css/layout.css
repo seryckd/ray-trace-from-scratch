@@ -1,0 +1,50 @@
+
+/*
+ * v1.0
+ */
+
+:root, input, button {
+    font-family: "Helvetica", "Arial", sans-serif;
+  
+    /* Slightly larger font size */
+    font-size: medium;
+  }
+  
+  body {
+  
+    /* The width of the body is capped at 50em. */
+    max-width: 50em;
+  
+    /* setting auto to left and right will centre the body in the window */
+    margin: 0 auto;
+  
+    /* the height of a line box. This puts space above and below the text line */
+    line-height: 1.5;
+  
+    /* Softer black for text */
+    color: #555;
+  
+  }
+  
+  .masthead {
+    /*background: #1a8bad;*/
+    background: #2b8cbe;
+    box-shadow: 3px 3px 8px hsl(0, 0%, 70%);
+  }
+  
+  .site-title {
+    padding: 1em 0;
+    font-weight: 300;
+    text-align: center;
+    color: hsl(5, 45%, 95%);
+    text-decoration: none;
+  }
+  
+  .card {
+    padding: 1em;
+    background-color: #ece7f2;
+    box-shadow: 3px 3px 8px hsl(0, 0%, 70%);
+    border: 2px solid #a6bddb;
+  }
+  
+  
