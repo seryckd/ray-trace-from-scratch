@@ -46,7 +46,7 @@ export const Scene = {
             id: 2,
             type: 'point',
             intensity: 0.6,
-            position: { x:2, y:1, z:1 }
+            position: { x:2, y:1, z:0 }
         },
         {
             id: 3,

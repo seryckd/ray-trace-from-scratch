@@ -91,15 +91,17 @@ export class Ray {
     }
 
     /**
-     * Trace (or 'cast') a ray into the scene and return a colour value
+     * Start at O and walk the vector D between tmin and tmax until we intersect 
+     * with an obect in the scene.  Return the object and distance along the 
+     * ray it intersects.
      * 
-     * @param {Point} O - camera position in world space 
-     * @param {Vector} D - direction of ray from the camera position
+     * @param {Point} O - a point in world space 
+     * @param {Vector} D - direction of ray from the point
      * @param {Number} tmin - ignore everything on the ray before this value
      * @param {Number} tmax - ignore everything on the ray after this value
-     * @returns {Colour} - colour to display
+     * @returns {Object} - closest_sphere or NULL; closest_t or infinity
      */
-    traceRay(O, D, tmin, tmax) {
+    closestIntersection(O, D, tmin, tmax) {
         let self = this;
 
         let closest_t = Number.POSITIVE_INFINITY;
@@ -119,28 +121,48 @@ export class Ray {
             }
         });
 
-        if (closest_sphere === null) {
-            // no objects were hit, so return the backgroun colour
+        return {
+            sphere: closest_sphere,
+            t: closest_t
+        }
+    }
+
+
+    /**
+     * Trace (or 'cast') a ray into the scene and return a colour value
+     * 
+     * @param {Point} O - camera position in world space 
+     * @param {Vector} D - direction of ray from the camera position
+     * @param {Number} tmin - ignore everything on the ray before this value
+     * @param {Number} tmax - ignore everything on the ray after this value
+     * @returns {Colour} - colour to display
+     */
+    traceRay(O, D, tmin, tmax) {
+
+        let closest = this.closestIntersection(O, D, tmin, tmax);
+
+        if (closest.sphere === null) {
+            // no objects were hit, so return the background colour
             return this.defaultColour;
         }
 
         // At this point the base colour is closest_sphere.colour.
-        let colour = new Colour(closest_sphere.colour.r, closest_sphere.colour.g, closest_sphere.colour.b);
+        let colour = new Colour(closest.sphere.colour.r, closest.sphere.colour.g, closest.sphere.colour.b);
 
         // Now we apply lighting affects
 
         // P is the intersection point between the Ray and the Sphere
         // Calculate by starting from camera position and travel in the 
         // direction of the ray (D) by the amount closest_t.
-        let P = maths.addVectorToPoint(O, maths.scalarProduct(D, closest_t));
+        let P = maths.addVectorToPoint(O, maths.scalarProduct(D, closest.t));
 
         // N is the sphere normal at the intersection point
         // (a vector from the center of the sphere to the intersection point)
         let N = maths.normalizeVector(
-            maths.makeVectorFromPoints(P, closest_sphere.centre));
+            maths.makeVectorFromPoints(P, closest.sphere.centre));
 
         return colour.applyIntensity(
-            this.computeLighting(P, N, maths.inverseVector(D), closest_sphere.specular));
+            this.computeLighting(P, N, maths.inverseVector(D), closest.sphere.specular));
     }
 
     /**
@@ -188,6 +210,8 @@ export class Ray {
      */
     computeLighting(P, N, V, specular) {
 
+        let self = this;
+
         // Intensity starts at 0 (no light)
         let i = 0.0;
 
@@ -201,50 +225,63 @@ export class Ray {
 
                 // L is the vector from the light source to the point (P)
                 let L = {};
+                let tmax;
 
                 if (light.type === 'point') {
                     // Point light is calculated as a vector from the light source to the point
                     L = maths.makeVectorFromPoints(light.position, P);
+                    tmax = 1;
                 } else {
                     // Directional light has given vector
                     L = light.direction;
+                    tmax = Number.POSITIVE_INFINITY;
                 }
 
-                // Diffuse Light            
-                // Find fraction of the light that is reflected given the surface normal and 
-                // the angle of the light
+                // Shadow Check
+                // If the point on the object to the light is interrupted
+                // by an object in the scene, then do not use the light source.
+                // If tmin is equal to 0 then the point will intersect with the 
+                // object it is on.
+                let shadow = self.closestIntersection(P, L, 0.001, tmax);
 
-                let n_dot_l = maths.dotProduct(N, L);
-                if (n_dot_l > 0) {
-                    // values that are less than 0 indicate light on the back of the surface
-                    i += light.intensity * n_dot_l 
-                         / (maths.vectorLength(N) * maths.vectorLength(L));
-                }
+                if (shadow.sphere == null) {
 
-                // Specular
-                // Find the amount of light that bounces back to the viewer
-                if (specular != -1) {
+                    // Diffuse Light            
+                    // Find fraction of the light that is reflected given the surface normal and 
+                    // the angle of the light
 
-                    // R is the light reflected at the point (P). It reflects at the same angle
-                    // as the angle between L and N
-                    const R = maths.subtractVectors(
-                        maths.scalarProduct(N, 2 * n_dot_l),
-                        L);
+                    let n_dot_l = maths.dotProduct(N, L);
+                    if (n_dot_l > 0) {
+                        // values that are less than 0 indicate light on the back of the surface
+                        i += light.intensity * n_dot_l 
+                            / (maths.vectorLength(N) * maths.vectorLength(L));
+                    }
 
-                    const r_dot_v = maths.dotProduct(R, V);
+                    // Specular
+                    // Find the amount of light that bounces back to the viewer
+                    if (specular != -1) {
 
-                    if (r_dot_v > 0) {
-                        // the angle between the reflected light (R) and the view vector (V) is less than 90deg
-                        // and so some light is reflected.  How much depends upon the specular exponent.
+                        // R is the light reflected at the point (P). It reflects at the same angle
+                        // as the angle between L and N
+                        const R = maths.subtractVectors(
+                            maths.scalarProduct(N, 2 * n_dot_l),
+                            L);
 
-                        // Specular component
-                        // 1 - an equal amount of light is reflected across all angles (matte)
-                        // 2 - 
-                        // 10 - 
-                        // 1000 - light is only reflected for a very small angle (very shiny)
+                        const r_dot_v = maths.dotProduct(R, V);
 
-                        const len = maths.vectorLength(R) * maths.vectorLength(V);
-                        i += light.intensity * Math.pow(r_dot_v/len, specular);
+                        if (r_dot_v > 0) {
+                            // the angle between the reflected light (R) and the view vector (V) is less than 90deg
+                            // and so some light is reflected.  How much depends upon the specular exponent.
+
+                            // Specular component
+                            // 1 - an equal amount of light is reflected across all angles (matte)
+                            // 2 - 
+                            // 10 - 
+                            // 1000 - light is only reflected for a very small angle (very shiny)
+
+                            const len = maths.vectorLength(R) * maths.vectorLength(V);
+                            i += light.intensity * Math.pow(r_dot_v/len, specular);
+                        }
                     }
                 }
             }
