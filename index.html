@@ -26,8 +26,17 @@
                 <tr><td>Yaw Right</td><td>n</td></tr>
                 <tr><td>Reset to Origin</td><td>r</td></tr>
             </table>
+            
+            <table>
+                <tr><td>Point Light</td><td><input name="features" type="checkbox" id="point"/></td></tr>
+                <tr><td>Directional Light</td><td><input name="features" type="checkbox" id="directional"/></td></tr>
+                <tr><td>Ambient Light</td><td><input name="features" type="checkbox" id="ambient"/></td></tr>
+                <tr><td>Specular Reflection</td><td><input name="features" type="checkbox" id="specular"/></td></tr>
+                <tr><td>Shadow</td><td><input name="features" type="checkbox" id="shadow"/></td></tr>
+                <tr><td>Reflection</td><td><input name="features" type="checkbox" id="reflection"/></td></tr>
+                <tr><td>Reflection Depth</td><td><input name="features" type="range" id="reflectionDepth" min="1" max="3" defaultValue="2" step="1"></td></tr>
+            </table>
         </div>
-
         <script type="module">
 
             import { MainLoop } from "./main.js";
@@ -45,6 +54,30 @@
             var canvas = document.getElementById("canvas");
             canvas.width = canvas_width;
             canvas.height = canvas_height;
+
+            let flags = {
+                'point': false,
+                'directional': false,
+                'ambient': false,
+                'specular': false,
+                'shadow': false,
+                'reflection': false,
+                'reflectionDepth': 2
+            }
+
+            document.querySelectorAll("input[name=features][type=checkbox]")
+                .forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function(e) {
+                        flags[e.target.id] = e.target.checked;
+                    });
+                });
+            document.querySelectorAll("input[name=features][type=range]")
+                .forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function(e) {
+                        flags[e.target.id] = e.target.value;
+                        console.log(e.target.id + '=' + flags[e.target.id]);
+                    });
+                });
 
             let camera = new Camera();
 
@@ -131,7 +164,8 @@
             let ray = new Ray(
                 canvas_width,
                 canvas_height,
-                Scene
+                Scene,
+                flags
             );
 
             var main = new MainLoop(update, render);

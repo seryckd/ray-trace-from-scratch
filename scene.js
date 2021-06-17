@@ -8,7 +8,8 @@ export const Scene = {
             centre: { x:0, y:-1, z:3 },
             radius: 1,
             colour: { r:255, g:0, b:0 },
-            specular: 500
+            specular: 500,
+            refective: 0.2
         },
         {
             id: 2,
@@ -16,7 +17,8 @@ export const Scene = {
             centre: { x:2, y:0, z:4 },
             radius: 1,
             colour: { r:0, g:0, b:255 },
-            specular: 500
+            specular: 500,
+            refective: 0.3
         },
         {
             id: 3,
@@ -24,7 +26,8 @@ export const Scene = {
             centre: { x:-2, y:0, z:4 },
             radius: 1,
             colour: { r:0, g:255, b:0 },
-            specular: 10
+            specular: 10,
+            refective: 0.4
         },
         {
             id: 4,
@@ -32,7 +35,8 @@ export const Scene = {
             centre: { x:0, y:-5001, z:0 },
             radius: 5000,
             colour: { r:255, g:255, b:0 },
-            specular: 1000
+            specular: 1000,
+            refective: 0.5
         }
     ],
 

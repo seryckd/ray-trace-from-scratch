@@ -28,4 +28,12 @@ export class Colour {
 
         return this;
     }
+
+    add(colour) {
+        this.r = maths.clamp(this.r + colour.r, 0, 255);
+        this.g = maths.clamp(this.g + colour.g, 0, 255);
+        this.b = maths.clamp(this.b + colour.b, 0, 255);
+
+        return this;
+    }
 }

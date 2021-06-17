@@ -26,10 +26,12 @@ export class Ray {
      * @param {Integer} cw - canvas width
      * @param {Integer} ch - canvas height
      * @param {Scene} scene - Scene object
+     * @param {Object} flags - feature toggles
      */
-    constructor(cw, ch, scene) {
+    constructor(cw, ch, scene, flags) {
 
         this.scene = scene;
+        this.flags = flags;
 
         /**
          * Canvas
@@ -65,7 +67,7 @@ export class Ray {
      * @param {Camera} camera - camera origin
      */
     render(buffer, camera) {
-        console.log('render');
+        console.log('render' + ' with reflectionDepth ' + this.flags['reflectionDepth']);
 
         // Iterate over every pixel in the canvas
         for (let x=-this.CN.HalfWidth; x<=this.CN.HalfWidth; x++) {
@@ -82,8 +84,11 @@ export class Ray {
                 // Trace the ray from camera.position along the D direction, only
                 // seeing objects between the projection plane and infinity.
                 let colour = this.traceRay(
-                    camera.position, D, 
-                    this.PP.d, Number.POSITIVE_INFINITY);
+                    camera.position, 
+                    D, 
+                    this.PP.d, 
+                    Number.POSITIVE_INFINITY, 
+                    this.flags['reflectionDepth']);
 
                 this.putPixel(buffer, {x:x, y:y}, colour);
             }
@@ -135,9 +140,10 @@ export class Ray {
      * @param {Vector} D - direction of ray from the camera position
      * @param {Number} tmin - ignore everything on the ray before this value
      * @param {Number} tmax - ignore everything on the ray after this value
+     * @param {Integer} depth - the number of times this function has been recursively called
      * @returns {Colour} - colour to display
      */
-    traceRay(O, D, tmin, tmax) {
+    traceRay(O, D, tmin, tmax, depth) {
 
         let closest = this.closestIntersection(O, D, tmin, tmax);
 
@@ -161,8 +167,27 @@ export class Ray {
         let N = maths.normalizeVector(
             maths.makeVectorFromPoints(P, closest.sphere.centre));
 
-        return colour.applyIntensity(
+        // Compute the colour at the point
+
+        let local_colour = colour.applyIntensity(
             this.computeLighting(P, N, maths.inverseVector(D), closest.sphere.specular));
+        
+        if (this.flags['reflection']) {
+            // If the object is reflective then trace another ray to find the colour that should
+            // be reflected.  Put a limit on the number of times we reflect.
+
+            let r = closest.sphere.refective;
+            if (depth <= 0 || r <= 0) {
+                return local_colour;
+            }
+
+            let R = this.reflectRay(maths.inverseVector(D), N);
+            let reflected_colour = this.traceRay(P, R, 0.001, Number.POSITIVE_INFINITY, depth - 1);
+
+            local_colour = local_colour.applyIntensity(1-r).add(reflected_colour.applyIntensity(r));
+        }
+
+        return local_colour;
     }
 
     /**
@@ -215,27 +240,43 @@ export class Ray {
         // Intensity starts at 0 (no light)
         let i = 0.0;
 
-        this.scene.lights.forEach(function(light) {
-
+        for (let index = 0; index < this.scene.lights.length; index++) {
+            const light = this.scene.lights[index];
+            
             if (light.type === 'ambient') {
-                // Ambient light is applied to every point
-                i += light.intensity;
+                if (self.flags['ambient']) {
+                    // Ambient light is applied to every point
+                    i += light.intensity;
+                }
+                continue;
+            }
 
-            } else {
+            // L is the vector from the light source to the point (P)
+            let L = {};
+            let tmax;
 
-                // L is the vector from the light source to the point (P)
-                let L = {};
-                let tmax;
-
-                if (light.type === 'point') {
+            if (light.type === 'point') {
+                if (self.flags['point']) {
                     // Point light is calculated as a vector from the light source to the point
                     L = maths.makeVectorFromPoints(light.position, P);
                     tmax = 1;
                 } else {
+                    continue;
+                }
+
+            } else {
+                if (self.flags['directional']) {
                     // Directional light has given vector
                     L = light.direction;
                     tmax = Number.POSITIVE_INFINITY;
+                } else {
+                    continue;
                 }
+            }
+
+            let in_shadow = false;
+
+            if (self.flags['shadow']) {
 
                 // Shadow Check
                 // If the point on the object to the light is interrupted
@@ -243,51 +284,69 @@ export class Ray {
                 // If tmin is equal to 0 then the point will intersect with the 
                 // object it is on.
                 let shadow = self.closestIntersection(P, L, 0.001, tmax);
+                in_shadow = (shadow.sphere != null);
+            }
 
-                if (shadow.sphere == null) {
+            if (!in_shadow) {
 
-                    // Diffuse Light            
-                    // Find fraction of the light that is reflected given the surface normal and 
-                    // the angle of the light
+                // Diffuse Light            
+                // Find fraction of the light that is reflected given the surface normal and 
+                // the angle of the light
 
-                    let n_dot_l = maths.dotProduct(N, L);
-                    if (n_dot_l > 0) {
-                        // values that are less than 0 indicate light on the back of the surface
-                        i += light.intensity * n_dot_l 
-                            / (maths.vectorLength(N) * maths.vectorLength(L));
-                    }
+                let n_dot_l = maths.dotProduct(N, L);
+                if (n_dot_l > 0) {
+                    // values that are less than 0 indicate light on the back of the surface
+                    i += light.intensity * n_dot_l 
+                        / (maths.vectorLength(N) * maths.vectorLength(L));
+                }
 
-                    // Specular
-                    // Find the amount of light that bounces back to the viewer
-                    if (specular != -1) {
+                // Specular
+                // Find the amount of light that bounces back to the viewer
+                if (self.flags['specular'] && specular != -1) {
 
-                        // R is the light reflected at the point (P). It reflects at the same angle
-                        // as the angle between L and N
-                        const R = maths.subtractVectors(
-                            maths.scalarProduct(N, 2 * n_dot_l),
-                            L);
+                    // R is the light reflected at the point (P). It reflects at the same angle
+                    // as the angle between L and N
+                    const R = self.reflectRay(L, N);
 
-                        const r_dot_v = maths.dotProduct(R, V);
+                    /*const R = maths.subtractVectors(
+                        maths.scalarProduct(N, 2 * n_dot_l),
+                        L);*/
 
-                        if (r_dot_v > 0) {
-                            // the angle between the reflected light (R) and the view vector (V) is less than 90deg
-                            // and so some light is reflected.  How much depends upon the specular exponent.
+                    const r_dot_v = maths.dotProduct(R, V);
 
-                            // Specular component
-                            // 1 - an equal amount of light is reflected across all angles (matte)
-                            // 2 - 
-                            // 10 - 
-                            // 1000 - light is only reflected for a very small angle (very shiny)
+                    if (r_dot_v > 0) {
+                        // the angle between the reflected light (R) and the view vector (V) is less than 90deg
+                        // and so some light is reflected.  How much depends upon the specular exponent.
 
-                            const len = maths.vectorLength(R) * maths.vectorLength(V);
-                            i += light.intensity * Math.pow(r_dot_v/len, specular);
-                        }
+                        // Specular component
+                        // 1 - an equal amount of light is reflected across all angles (matte)
+                        // 2 - 
+                        // 10 - 
+                        // 1000 - light is only reflected for a very small angle (very shiny)
+
+                        const len = maths.vectorLength(R) * maths.vectorLength(V);
+                        i += light.intensity * Math.pow(r_dot_v/len, specular);
                     }
                 }
             }
-        });
+        }
 
         return i;
+    }
+
+    /**
+     * Reflect a ray (R) with respect to a normal (N).  
+     * 
+     * @param {Vector} R - a ray
+     * @param {Vector} N - a normal of a point the ray reflects at
+     * @returns {Vector} - the reflected ray
+     */
+    reflectRay(R, N) {
+        return maths.subtractVectors(
+            maths.scalarProduct(
+                N, 
+                2 * maths.dotProduct(N, R)), 
+            R);
     }
 
     /**
