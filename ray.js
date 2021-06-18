@@ -132,6 +132,33 @@ export class Ray {
         }
     }
 
+    /**
+     * Start at O and walk the vector D between tmin and tmax until we intersect 
+     * with an obect in the scene.
+     * 
+     * @param {Point} O - a point in world space 
+     * @param {Vector} D - direction of ray from the point
+     * @param {Number} tmin - ignore everything on the ray before this value
+     * @param {Number} tmax - ignore everything on the ray after this value
+     * @returns {Boolean} - true if we hit an object
+     */
+    anyIntersection(O, D, tmin, tmax) {
+            
+        for (let index = 0; index < this.scene.objects.length; index++) {
+            const obj = this.scene.objects[index];
+            
+            // does the ray intersect the object?
+            let ts = this.intersectRaySphere(O, D, obj);
+            if (maths.valueInRange(ts.t1, tmin, tmax)) {
+                return true;
+            }
+            if (maths.valueInRange(ts.t2, tmin, tmax)) {
+                return true;
+            }
+        };
+
+        return false;
+    }
 
     /**
      * Trace (or 'cast') a ray into the scene and return a colour value
@@ -283,8 +310,7 @@ export class Ray {
                 // by an object in the scene, then do not use the light source.
                 // If tmin is equal to 0 then the point will intersect with the 
                 // object it is on.
-                let shadow = self.closestIntersection(P, L, 0.001, tmax);
-                in_shadow = (shadow.sphere != null);
+                in_shadow = self.anyIntersection(P, L, 0.001, tmax);
             }
 
             if (!in_shadow) {

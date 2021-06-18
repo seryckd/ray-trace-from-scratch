@@ -28,12 +28,12 @@
             </table>
             
             <table>
-                <tr><td>Point Light</td><td><input name="features" type="checkbox" id="point"/></td></tr>
-                <tr><td>Directional Light</td><td><input name="features" type="checkbox" id="directional"/></td></tr>
-                <tr><td>Ambient Light</td><td><input name="features" type="checkbox" id="ambient"/></td></tr>
-                <tr><td>Specular Reflection</td><td><input name="features" type="checkbox" id="specular"/></td></tr>
-                <tr><td>Shadow</td><td><input name="features" type="checkbox" id="shadow"/></td></tr>
-                <tr><td>Reflection</td><td><input name="features" type="checkbox" id="reflection"/></td></tr>
+                <tr><td>Point Light</td><td><input name="features" type="checkbox" id="point" checked="true"/></td></tr>
+                <tr><td>Directional Light</td><td><input name="features" type="checkbox" id="directional" checked="true"/></td></tr>
+                <tr><td>Ambient Light</td><td><input name="features" type="checkbox" id="ambient" checked="true"/></td></tr>
+                <tr><td>Specular Reflection</td><td><input name="features" type="checkbox" id="specular" checked="true"/></td></tr>
+                <tr><td>Shadow</td><td><input name="features" type="checkbox" id="shadow" checked="true"/></td></tr>
+                <tr><td>Reflection</td><td><input name="features" type="checkbox" id="reflection" checked="true"/></td></tr>
                 <tr><td>Reflection Depth</td><td><input name="features" type="range" id="reflectionDepth" min="1" max="3" defaultValue="2" step="1"></td></tr>
             </table>
         </div>
@@ -54,30 +54,6 @@
             var canvas = document.getElementById("canvas");
             canvas.width = canvas_width;
             canvas.height = canvas_height;
-
-            let flags = {
-                'point': false,
-                'directional': false,
-                'ambient': false,
-                'specular': false,
-                'shadow': false,
-                'reflection': false,
-                'reflectionDepth': 2
-            }
-
-            document.querySelectorAll("input[name=features][type=checkbox]")
-                .forEach(function(checkbox) {
-                    checkbox.addEventListener('change', function(e) {
-                        flags[e.target.id] = e.target.checked;
-                    });
-                });
-            document.querySelectorAll("input[name=features][type=range]")
-                .forEach(function(checkbox) {
-                    checkbox.addEventListener('change', function(e) {
-                        flags[e.target.id] = e.target.value;
-                        console.log(e.target.id + '=' + flags[e.target.id]);
-                    });
-                });
 
             let camera = new Camera();
 
@@ -161,6 +137,19 @@
                 return camera.hasChanged();
             }
 
+            var main = new MainLoop(update, render);
+            main.registerKeyBindings(keyBindings);
+
+            let flags = {
+                'point': true,
+                'directional': true,
+                'ambient': true,
+                'specular': true,
+                'shadow': true,
+                'reflection': true,
+                'reflectionDepth': 2
+            }
+
             let ray = new Ray(
                 canvas_width,
                 canvas_height,
@@ -168,8 +157,21 @@
                 flags
             );
 
-            var main = new MainLoop(update, render);
-            main.registerKeyBindings(keyBindings);
+            document.querySelectorAll("input[name=features][type=checkbox]")
+                .forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function(e) {
+                        flags[e.target.id] = e.target.checked;
+                        main.forceRender();
+                    });
+                });
+            document.querySelectorAll("input[name=features][type=range]")
+                .forEach(function(checkbox) {
+                    checkbox.addEventListener('change', function(e) {
+                        flags[e.target.id] = e.target.value;
+                        main.forceRender();
+                    });
+                });
+
             main.start();
 
         </script>

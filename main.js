@@ -30,7 +30,7 @@ export class MainLoop {
         window.requestAnimationFrame(function() {this.frame()}.bind(this));
     }
 
-    needsRender() {
+    forceRender() {
         this.isNeedsRender = true;
     }
 
