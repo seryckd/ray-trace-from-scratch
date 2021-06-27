@@ -62,12 +62,16 @@ export class Ray {
     }
 
     /**
+     * Render a scene onto the canvas.
+     * Traces rays from the camera to the viewport, then maps the viewport to the canvas.
      * 
      * @param {Buffer} buffer - canvas buffer 
      * @param {Camera} camera - camera origin
      */
     render(buffer, camera) {
-        console.log('render' + ' with reflectionDepth ' + this.flags['reflectionDepth']);
+
+        let cache = null;
+        let prev = null;
 
         // Iterate over every pixel in the canvas
         for (let x=-this.CN.HalfWidth; x<=this.CN.HalfWidth; x++) {
@@ -83,14 +87,35 @@ export class Ray {
 
                 // Trace the ray from camera.position along the D direction, only
                 // seeing objects between the projection plane and infinity.
-                let colour = this.traceRay(
+                let trace = this.traceRay(
                     camera.position, 
                     D, 
                     this.PP.d, 
                     Number.POSITIVE_INFINITY, 
+                    cache,
                     this.flags['reflectionDepth']);
 
-                this.putPixel(buffer, {x:x, y:y}, colour);
+                if (this.flags['subsampling']) {
+
+                    // Subsample
+                    // We could assume that rays that are next to each other will hit the  
+                    // same object. This reduces the amount of calculations but has the
+                    // chance of missing a very thin object.
+
+                    if (y % 2) {
+                        cache = null;
+                    } else {
+                        cache = trace;
+                        //trace.colour = new Colour(0, 0, 0);
+                    }
+                }
+
+                this.putPixel(buffer, {x:x, y:y}, trace.colour);
+
+                // if (prev != null) {
+                //     this.putPixel(buffer, {x:x, y:y-1}, trace.colour.avg(prev));
+                // }
+                // prev = trace.colour;                    
             }
         }
     }
@@ -132,6 +157,23 @@ export class Ray {
         }
     }
 
+    xxx(sphere, O, D, tmin, tmax) {
+        let t = Number.POSITIVE_INFINITY;
+        let ts = this.intersectRaySphere(O, D, sphere);
+
+        if (maths.valueInRange(ts.t1, tmin, tmax)) {
+            t = ts.t1;
+        }
+        if (maths.valueInRange(ts.t2, tmin, tmax) && ts.t2 < t) {
+            t = ts.t2;
+        }
+
+        return {
+            sphere: sphere,
+            t: t
+        }
+    }
+
     /**
      * Start at O and walk the vector D between tmin and tmax until we intersect 
      * with an obect in the scene.
@@ -168,53 +210,65 @@ export class Ray {
      * @param {Number} tmin - ignore everything on the ray before this value
      * @param {Number} tmax - ignore everything on the ray after this value
      * @param {Integer} depth - the number of times this function has been recursively called
-     * @returns {Colour} - colour to display
+     * @returns {Object} - "sphere", "t", "colour"
      */
-    traceRay(O, D, tmin, tmax, depth) {
+    traceRay(O, D, tmin, tmax, cache, depth) {
 
-        let closest = this.closestIntersection(O, D, tmin, tmax);
+        let trace = cache;
 
-        if (closest.sphere === null) {
+        if (trace === null) {
+            // No cached value, calculate it
+            trace = this.closestIntersection(O, D, tmin, tmax);
+        } else if (trace.sphere !== null) {
+            // We have a cached value that includes an object, so use that
+            trace = this.xxx(trace.sphere, O, D, tmin, tmax);
+        }
+
+        if (trace.sphere === null) {
             // no objects were hit, so return the background colour
-            return this.defaultColour;
+            trace.colour = this.defaultColour;
+            return trace;
         }
 
         // At this point the base colour is closest_sphere.colour.
-        let colour = new Colour(closest.sphere.colour.r, closest.sphere.colour.g, closest.sphere.colour.b);
+        let colour = new Colour(trace.sphere.colour.r, trace.sphere.colour.g, trace.sphere.colour.b);
 
         // Now we apply lighting affects
 
         // P is the intersection point between the Ray and the Sphere
         // Calculate by starting from camera position and travel in the 
         // direction of the ray (D) by the amount closest_t.
-        let P = maths.addVectorToPoint(O, maths.scalarProduct(D, closest.t));
+        let P = maths.addVectorToPoint(O, maths.scalarProduct(D, trace.t));
 
         // N is the sphere normal at the intersection point
         // (a vector from the center of the sphere to the intersection point)
         let N = maths.normalizeVector(
-            maths.makeVectorFromPoints(P, closest.sphere.centre));
+            maths.makeVectorFromPoints(P, trace.sphere.centre));
 
         // Compute the colour at the point
 
         let local_colour = colour.applyIntensity(
-            this.computeLighting(P, N, maths.inverseVector(D), closest.sphere.specular));
+            this.computeLighting(P, N, maths.inverseVector(D), trace.sphere.specular));
         
         if (this.flags['reflection']) {
             // If the object is reflective then trace another ray to find the colour that should
             // be reflected.  Put a limit on the number of times we reflect.
 
-            let r = closest.sphere.refective;
+            let r = trace.sphere.refective;
             if (depth <= 0 || r <= 0) {
-                return local_colour;
+                trace.colour = local_colour;
+                return trace;
             }
 
             let R = this.reflectRay(maths.inverseVector(D), N);
-            let reflected_colour = this.traceRay(P, R, 0.001, Number.POSITIVE_INFINITY, depth - 1);
+            let reflectedTrace = this.traceRay(P, R, 0.001, Number.POSITIVE_INFINITY, null, depth - 1);
 
-            local_colour = local_colour.applyIntensity(1-r).add(reflected_colour.applyIntensity(r));
+            local_colour = local_colour.applyIntensity(1-r)
+                                .add(reflectedTrace.colour.applyIntensity(r));
         }
 
-        return local_colour;
+        trace.colour = local_colour;
+        return trace;
     }
 
     /**
@@ -403,7 +457,6 @@ export class Ray {
      * @param {Buffer} buffer 
      * @param {Point} pt 
      * @param {Colour} colour 
-     * @returns 
      */
     putPixel(buffer, pt, colour) {
 

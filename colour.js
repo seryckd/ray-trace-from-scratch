@@ -36,4 +36,13 @@ export class Colour {
 
         return this;
     }
+
+    avg(colour) {
+        this.r = maths.clamp((this.r + colour.r) / 2, 0, 255);
+        this.g = maths.clamp((this.g + colour.g) / 2, 0, 255);
+        this.b = maths.clamp((this.b + colour.b) / 2, 0, 255);
+
+        return this;
+
+    }
 }
