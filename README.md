@@ -3,7 +3,12 @@ Building the Ray Tracer from the book 'Computer Graphics from Scratch'
 
 [Try it out](https://seryckd.github.io/ray-trace-from-scratch/)
 
-Done
-* Chapter 2 Basic RayTracing
-* Chapter 3 Light (Point, Directional, Ambient)
-
+Features
+* Geometry
+  * Spheres
+* Light
+  * Sources - Ambient, Point, Directional
+  * Specular Reflection
+  * Shadows
+  * Reflections
+* Optimizations
